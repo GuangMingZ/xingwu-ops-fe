@@ -21,6 +21,7 @@ export function RegionBreadcrumb({ regions = [], currentRegion }: RegionBreadcru
       style={{ marginBottom: 16 }}
       items={[
         {
+          key: currentRegion.id,
           title: (
             <Space size={6}>
               <Typography.Text type="secondary">
@@ -31,6 +32,7 @@ export function RegionBreadcrumb({ regions = [], currentRegion }: RegionBreadcru
           ),
         },
         ...others.map((r) => ({
+          key: r.id,
           title: <Typography.Text type="secondary">{r.name}</Typography.Text>,
         })),
       ]}
