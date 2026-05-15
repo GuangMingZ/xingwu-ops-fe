@@ -1,0 +1,29 @@
+{
+  "name": "xingwu-app-product",
+  "version": "1.0.0",
+  "private": true,
+  "description": "星坞示例子应用 — 商品管理",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.5.1",
+    "@xingwu/types": "workspace:*",
+    "antd": "^5.22.2",
+    "dayjs": "^1.11.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  }
+}

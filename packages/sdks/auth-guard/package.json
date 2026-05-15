@@ -1,0 +1,17 @@
+{
+  "name": "xingwu-sdk-auth-guard",
+  "version": "1.2.0",
+  "private": true,
+  "description": "星坞示例 SDK — 鉴权守卫（纯逻辑）",
+  "scripts": {
+    "dev": "vite --port 5175",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@xingwu/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  }
+}

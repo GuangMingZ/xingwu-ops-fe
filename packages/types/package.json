@@ -1,0 +1,35 @@
+{
+  "name": "@xingwu/types",
+  "version": "1.0.0",
+  "description": "星坞框架共享类型定义",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "peerDependencies": {
+    "zod": "^3.22.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "react": "^18.3.1",
+    "tsc-alias": "^1.8.17",
+    "typescript": "^5.4.5",
+    "zod": "^3.22.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "xingwu-ops-fe",
+  "version": "0.0.0",
+  "private": true,
+  "description": "星坞 — 万星入坞，一壳相承",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @xingwu/shell dev",
+    "build": "pnpm -r build",
+    "build:types": "pnpm --filter @xingwu/types build",
+    "build:vite-plugin": "pnpm --filter @xingwu/vite-plugin build",
+    "build:shell": "pnpm --filter @xingwu/shell build",
+    "build:product": "pnpm --filter xingwu-app-product build",
+    "build:auth-guard": "pnpm --filter xingwu-sdk-auth-guard build",
+    "build:region-selector": "pnpm --filter xingwu-sdk-region-selector build",
+    "lint": "eslint packages",
+    "lint:fix": "eslint packages --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "rimraf packages/*/dist"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "globals": "^15.12.0",
+    "postcss": "^8.4.49",
+    "prettier": "^3.3.3",
+    "rimraf": "^5.0.5",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.15.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

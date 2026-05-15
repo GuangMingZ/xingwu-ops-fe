@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+*.tsbuildinfo
+
+# Source maps (published artifacts)
+*.js.map
+*.d.ts.map
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs & debug
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test & coverage
+coverage/
+.nyc_output/
+
+# Tooling caches
+.turbo/
+.cache/
+.parcel-cache/
+.vite/
+*.local

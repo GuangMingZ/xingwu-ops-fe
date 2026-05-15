@@ -1,0 +1,109 @@
+import type { ShellConfig, PluginDescriptor } from '@xingwu/types';
+import { PluginRegistry } from '@/registry';
+import { ConfigCenter } from '@/config-center';
+import { SharedStateBus } from '@/shared-state';
+import { SdkRegistry } from '@/sdk-registry';
+import { LifecycleManager } from '@/lifecycle';
+import { MonitorImpl, I18nImpl, NetClientImpl, PermissionCheckerImpl } from '@/infra';
+
+/**
+ * Shell — 星坞框架壳层核心
+ *
+ * 聚合所有核心模块，提供统一的框架初始化与运行时能力。
+ */
+export class Shell {
+  readonly registry: PluginRegistry;
+  readonly configCenter: ConfigCenter;
+  readonly sharedState: SharedStateBus;
+  readonly sdkRegistry: SdkRegistry;
+  readonly lifecycle: LifecycleManager;
+  readonly monitor: MonitorImpl;
+  readonly i18n: I18nImpl;
+  readonly net: NetClientImpl;
+  readonly permission: PermissionCheckerImpl;
+
+  readonly config: ShellConfig;
+  private container: HTMLElement | null = null;
+
+  constructor(config: ShellConfig) {
+    this.config = config;
+
+    // 初始化基础设施
+    this.monitor = new MonitorImpl(config.monitor);
+    this.i18n = new I18nImpl(config.i18n);
+    this.net = new NetClientImpl();
+    this.permission = new PermissionCheckerImpl();
+
+    // 初始化核心模块
+    this.registry = new PluginRegistry();
+    this.configCenter = new ConfigCenter(config.configCenter);
+    this.sharedState = new SharedStateBus();
+    this.lifecycle = new LifecycleManager(this.registry);
+    this.sdkRegistry = new SdkRegistry(this.registry, {
+      lifecycle: this.lifecycle,
+      configCenter: this.configCenter,
+      sharedState: this.sharedState,
+      monitor: this.monitor,
+      i18n: this.i18n,
+    });
+  }
+
+  /** 初始化框架 */
+  async init(): Promise<void> {
+    // 注册插件描述符
+    const { plugins } = this.config;
+    if (Array.isArray(plugins.descriptors)) {
+      this.registry.registerAll(plugins.descriptors);
+    } else if (typeof plugins.descriptors === 'string') {
+      // 从远程拉取描述符
+      try {
+        const response = await fetch(plugins.descriptors);
+        const descriptors: PluginDescriptor[] = await response.json();
+        this.registry.registerAll(descriptors);
+      } catch (err) {
+        console.error('[Xingwu] Failed to fetch plugin descriptors:', err);
+      }
+    }
+
+    // 预加载 SDK
+    if ((plugins.preloadSdks ?? []).length > 0) {
+      await this.sdkRegistry.preload(plugins.preloadSdks);
+    }
+
+    // 启动配置中心远程刷新
+    this.configCenter.startRefresh();
+
+    console.info(`[Xingwu] Shell "${this.config.appName}" initialized.`);
+  }
+
+  /** 挂载应用到 DOM */
+  async mount(selector: string | HTMLElement): Promise<void> {
+    this.container =
+      typeof selector === 'string' ? document.querySelector<HTMLElement>(selector)! : selector;
+
+    if (!this.container) {
+      throw new Error(`[Xingwu] Mount container not found: ${selector}`);
+    }
+
+    await this.init();
+  }
+
+  /** 销毁框架 */
+  async destroy(): Promise<void> {
+    this.configCenter.stopRefresh();
+    // 卸载所有活跃插件
+    for (const instance of this.registry.getAll()) {
+      if (instance.status === 'active') {
+        await this.registry.unregister(instance.descriptor.name);
+      }
+    }
+    console.info(`[Xingwu] Shell "${this.config.appName}" destroyed.`);
+  }
+}
+
+/**
+ * createShell — 创建 Shell 实例
+ */
+export function createShell(config: ShellConfig): Shell {
+  return new Shell(config);
+}

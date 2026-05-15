@@ -1,0 +1,108 @@
+/** 订阅者回调 */
+export type Subscriber<T = unknown> = (value: T, prev: T) => void;
+
+/** 共享状态总线 */
+export interface SharedStateBus {
+  /** 读取共享状态 */
+  getState<T>(key: string): T | undefined;
+  /** 写入共享状态（触发订阅者） */
+  setState<T>(key: string, value: T | ((prev: T) => T)): void;
+  /** 订阅状态变更 */
+  subscribe<T>(key: string, callback: Subscriber<T>): () => void;
+  /** 批量更新（仅触发一次通知） */
+  batchSet(updates: Record<string, unknown>): void;
+}
+
+/** 配置中心 */
+export interface ConfigCenter {
+  /** 注册配置 Schema */
+  registerSchema(key: string, schema: Record<string, unknown>): void;
+  /** 获取配置 */
+  get<T>(key: string): T;
+  /** 设置配置 */
+  set<T>(key: string, value: T): void;
+  /** 批量更新 */
+  batchUpdate(updates: Record<string, unknown>): void;
+  /** 监听配置变更 */
+  watch<T>(key: string, callback: (value: T, oldValue: T) => void): () => void;
+  /** 从远程拉取最新配置 */
+  refresh(): Promise<void>;
+  /** 获取插件级配置作用域 */
+  forPlugin(name: string): PluginConfigScope;
+}
+
+/** 插件级配置作用域 */
+export interface PluginConfigScope {
+  get<T>(key: string): T;
+  set<T>(key: string, value: T): void;
+  watch<T>(key: string, callback: (value: T, oldValue: T) => void): () => void;
+}
+
+/** 监控事件映射 */
+export interface MonitorEvents {
+  'plugin:register': { name: string; type: string };
+  'plugin:mount': { name: string; duration: number };
+  'plugin:unmount': { name: string };
+  'plugin:error': { name: string; error: Error; phase: string };
+  'route:change': { from: string; to: string; duration: number };
+  'route:redirect': { from: string; to: string; reason: string };
+  'sdk:load': { name: string; duration: number };
+  'sdk:error': { name: string; error: Error };
+  'perf:first-paint': { plugin: string; duration: number };
+  'perf:api-call': { plugin: string; api: string; duration: number; status: number };
+  'health:white-screen': { url: string; timeout: number };
+  'config:change': { key: string; source: string };
+}
+
+/** 监控接口 */
+export interface Monitor {
+  mark<E extends keyof MonitorEvents>(event: E, data: MonitorEvents[E]): void;
+  reportError(tag: string, error: Error): void;
+}
+
+/** 国际化接口 */
+export interface I18n {
+  t(key: string, params?: Record<string, unknown>): string;
+  locale: string;
+  setLocale(locale: string): void;
+}
+
+/** 网络请求客户端 */
+export interface NetClient {
+  request<T = unknown>(url: string, options?: RequestInit): Promise<T>;
+  get<T = unknown>(url: string, params?: Record<string, string>): Promise<T>;
+  post<T = unknown>(url: string, body?: unknown): Promise<T>;
+}
+
+/** 权限检查结果 */
+export type PermissionResult =
+  | { granted: true }
+  | { granted: false; reason: string; node: PermissionNode };
+
+/** 权限节点 */
+export interface PermissionNode {
+  type: 'admin' | 'identity' | 'rbac' | 'custom';
+  config?: Record<string, unknown>;
+  fallback?: React.ComponentType;
+}
+
+/** 权限检查接口 */
+export interface PermissionChecker {
+  checkAdmin(): Promise<boolean>;
+  checkIdentity(): Promise<boolean>;
+  checkRbacAction(action: string): Promise<boolean>;
+  checkChain(chain: PermissionNode[]): Promise<PermissionResult>;
+}
+
+/** SdkRegistry 门面接口 */
+export interface SdkRegistry {
+  has(name: string): boolean;
+  get<T = unknown>(name: string): T | undefined;
+  load<T = unknown>(name: string): Promise<T>;
+  preload(names: string[]): Promise<void>;
+  reload(name: string): Promise<void>;
+  getComponent<T extends React.ComponentType<any>>(
+    sdkName: string,
+    componentName: string,
+  ): T | undefined;
+}

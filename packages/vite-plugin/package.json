@@ -1,0 +1,27 @@
+{
+  "name": "@xingwu/vite-plugin",
+  "version": "1.0.0",
+  "description": "星坞框架 Vite 构建插件",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0"
+  },
+  "files": ["dist"]
+}

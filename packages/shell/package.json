@@ -1,0 +1,32 @@
+{
+  "name": "@xingwu/shell",
+  "version": "1.0.0",
+  "private": true,
+  "description": "星坞框架主应用壳层",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.5.1",
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "@xingwu/types": "workspace:*",
+    "antd": "^5.22.2",
+    "dayjs": "^1.11.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  }
+}

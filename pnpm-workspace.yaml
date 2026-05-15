@@ -1,0 +1,6 @@
+packages:
+  - packages/types
+  - packages/vite-plugin
+  - packages/shell
+  - packages/apps/*
+  - packages/sdks/*
