@@ -1,0 +1,35 @@
+{
+  "env": { "node": true, "es2020": true },
+  "extends": [
+    "@tencent/eslint-config-tencent",
+    "@tencent/eslint-config-tencent/ts",
+    "@tencent/eslint-config-tencent/prettier",
+		"plugin:prettier/recommended"
+  ],
+  "plugins": ["simple-import-sort"],
+  "rules": {
+		"no-param-reassign":"off",
+    "no-plusplus": "off",
+
+    "@typescript-eslint/naming-convention": "off",
+		"@typescript-eslint/no-misused-promises": "off",
+
+    "prettier/prettier": [
+      "warn",
+      {},
+      {
+        "usePrettierrc": true
+      }
+    ],
+
+    "sort-imports": "off",
+    "import/order": "off",
+    "simple-import-sort/imports": [
+      "warn",
+      {
+        "groups": [["^\\u0000"], ["^"], ["^@tencent"], ["^\\.\\.", "^\\."]]
+      }
+    ]
+  },
+	"ignorePatterns":["output","node_modules"]
+}
