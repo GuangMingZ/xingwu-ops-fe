@@ -13,6 +13,7 @@
     "build:product": "pnpm --filter xingwu-app-product build",
     "build:auth-guard": "pnpm --filter xingwu-sdk-auth-guard build",
     "build:region-selector": "pnpm --filter xingwu-sdk-region-selector build",
+    "build:cli": "pnpm --filter xingwu-cli build",
     "lint": "eslint packages",
     "lint:fix": "eslint packages --fix",
     "format": "prettier --write .",

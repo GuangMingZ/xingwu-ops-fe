@@ -1,0 +1,37 @@
+{
+  "name": "xingwu-cli",
+  "version": "0.1.0",
+  "description": "星坞脚手架 — 创建子应用（App）与轻量 SDK",
+  "type": "module",
+  "bin": {
+    "xingwu": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "prepublishOnly": "pnpm build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "xingwu",
+    "cli",
+    "scaffold",
+    "micro-frontend"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.4.5"
+  }
+}

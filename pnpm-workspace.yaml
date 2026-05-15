@@ -1,6 +1,7 @@
 packages:
   - packages/types
   - packages/vite-plugin
+  - packages/xingwu-cli
   - packages/shell
   - packages/apps/*
   - packages/sdks/*

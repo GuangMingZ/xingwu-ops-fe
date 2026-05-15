@@ -1,0 +1,17 @@
+{
+  "name": "{{packageName}}",
+  "version": "1.0.0",
+  "private": true,
+  "description": "{{description}}",
+  "scripts": {
+    "dev": "vite --port {{port}}",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@xingwu/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  }
+}

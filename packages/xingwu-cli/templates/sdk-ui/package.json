@@ -1,0 +1,24 @@
+{
+  "name": "{{packageName}}",
+  "version": "1.0.0",
+  "private": true,
+  "description": "{{description}}（含 UI）",
+  "scripts": {
+    "dev": "vite --port {{port}}",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@xingwu/types": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@ant-design/icons": "^5.5.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "antd": "^5.22.2",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  }
+}
