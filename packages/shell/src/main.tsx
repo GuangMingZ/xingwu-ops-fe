@@ -21,7 +21,7 @@ import { GlobalOutlined } from '@ant-design/icons';
 import { createRoot } from 'react-dom/client';
 import { createShell } from '@/bootstrap';
 import { ShellApp } from '@/App';
-import type { ShellConfig, PluginDescriptor } from '@xingwu/types';
+import type { ShellConfig } from '@xingwu/types';
 
 dayjs.locale('zh-cn');
 
@@ -42,64 +42,11 @@ dayjs.locale('zh-cn');
   icons: { GlobalOutlined },
 };
 
-/** 开发态走 Vite 源码入口；生产可改为 CDN 或同源的 `/assets/region-selector.mjs` */
-const REGION_SELECTOR_SDK_ENTRY = import.meta.env.DEV
-  ? 'http://localhost:5176/src/index.tsx'
-  : `${typeof window !== 'undefined' ? window.location.origin : ''}/sdk/region-selector.mjs`;
-
-/** 错误降级组件 */
 function ErrorFallback({ error }: { error: Error }) {
   return <Result status="error" title="应用出错" subTitle={error.message} />;
 }
 
-/** 开发模式下的本地插件描述符 */
-const devDescriptors: PluginDescriptor[] = [
-  {
-    name: 'product',
-    type: 'app',
-    version: '1.0.0',
-    entry: 'http://localhost:5174/src/index.tsx',
-    routePrefix: '/product',
-    dependencies: ['region-selector'],
-    navItem: {
-      key: 'product',
-      label: '商品管理',
-      icon: '📦',
-      order: 100,
-      children: [{ key: '', label: '商品列表' }],
-    },
-  },
-  // {
-  //   name: 'auth-guard',
-  //   type: 'sdk',
-  //   version: '1.2.0',
-  //   entry: 'http://localhost:5175/src/index.ts',
-  //   preload: true,
-  //   exports: ['AuthGuardApi'],
-  // },
-  {
-    name: 'region-selector',
-    type: 'sdk',
-    version: '2.1.0',
-    entry: REGION_SELECTOR_SDK_ENTRY,
-    preload: true,
-    exports: ['RegionSelectorApi'],
-    uiComponents: [
-      {
-        name: 'RegionPicker',
-        description: '区域选择器下拉组件',
-        slot: 'header-slot',
-      },
-      {
-        name: 'RegionBreadcrumb',
-        description: '区域面包屑导航',
-        slot: 'breadcrumb',
-      },
-    ],
-    styleStrategy: 'css-modules',
-  },
-];
-
+/** Shell 运行时配置（插件列表见 config/apps.json、config/sdks.json） */
 const config: ShellConfig = {
   appName: 'OpsConsole',
   defaultTitle: '管理后台',
@@ -114,8 +61,8 @@ const config: ShellConfig = {
     cacheKey: '__xingwu_config',
   },
   plugins: {
-    descriptors: devDescriptors,
-    preloadSdks: ['region-selector'],
+    apps: '/config/apps.json',
+    sdks: '/config/sdks.json',
   },
   layout: {
     header: () => null,
@@ -125,7 +72,7 @@ const config: ShellConfig = {
   monitor: {
     dsn: 'https://monitor.example.com',
     sampleRate: 0.1,
-    environment: 'development',
+    environment: import.meta.env.PROD ? 'production' : 'development',
   },
   i18n: {
     defaultLocale: 'zh',

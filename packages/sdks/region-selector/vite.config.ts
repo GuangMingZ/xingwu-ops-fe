@@ -160,7 +160,7 @@ export default defineConfig({
       fileName: 'region-selector',
     },
     rollupOptions: {
-      external: ['react', 'react-dom', '@xingwu/types'],
+      external: ['react', 'react-dom', 'react-dom/client', '@xingwu/types'],
     },
   },
 });

@@ -4,12 +4,13 @@ import autoprefixer from 'autoprefixer';
 import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { shellConfigVitePlugin } from './src/config/shellConfigVitePlugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const tailwindConfigPath = path.resolve(__dirname, '../../tailwind.config.cjs');
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), shellConfigVitePlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

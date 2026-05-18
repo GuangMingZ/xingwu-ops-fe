@@ -1,0 +1,28 @@
+[
+  {
+    "name": "auth-guard",
+    "version": "1.2.0",
+    "entry": "/sdk/auth-guard.mjs",
+    "exports": ["AuthGuardApi"]
+  },
+  {
+    "name": "region-selector",
+    "version": "2.1.0",
+    "entry": "/sdk/region-selector.mjs",
+    "preload": true,
+    "exports": ["RegionSelectorApi"],
+    "uiComponents": [
+      {
+        "name": "RegionPicker",
+        "description": "区域选择器下拉组件",
+        "slot": "header-slot"
+      },
+      {
+        "name": "RegionBreadcrumb",
+        "description": "区域面包屑导航",
+        "slot": "breadcrumb"
+      }
+    ],
+    "styleStrategy": "css-modules"
+  }
+]

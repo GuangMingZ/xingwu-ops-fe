@@ -152,7 +152,7 @@ export class SdkRegistry implements ISdkRegistry {
   }
 
   /** 获取 SDK 提供的 UI 组件 */
-  getComponent<T extends ComponentType<any>>(
+  getComponent<T extends ComponentType<Record<string, unknown>>>(
     sdkName: string,
     componentName: string,
   ): T | undefined {

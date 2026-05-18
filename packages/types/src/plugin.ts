@@ -1,6 +1,44 @@
 /** 插件类型 */
 export type PluginType = 'app' | 'sdk';
 
+/** 子应用描述符（Shell config/apps.json，不含 type 字段） */
+export interface AppDescriptor {
+  name: string;
+  version: string;
+  entry: string;
+  routePrefix: string;
+  dependencies?: string[];
+  navItem?: NavItem;
+  configSchema?: Record<string, unknown>;
+  integrity?: string;
+  dependencyRanges?: Record<string, string>;
+}
+
+/** SDK 描述符（Shell config/sdks.json，不含 type 字段） */
+export interface SdkDescriptor {
+  name: string;
+  version: string;
+  entry: string;
+  dependencies?: string[];
+  exports?: string[];
+  preload?: boolean;
+  uiComponents?: UiComponentDecl[];
+  styleStrategy?: 'css-modules' | 'css-in-js' | 'shadow-dom';
+  configSchema?: Record<string, unknown>;
+  integrity?: string;
+  dependencyRanges?: Record<string, string>;
+}
+
+/** 将子应用配置转为注册表使用的 PluginDescriptor */
+export function appDescriptorToPlugin(app: AppDescriptor): PluginDescriptor {
+  return { ...app, type: 'app' };
+}
+
+/** 将 SDK 配置转为注册表使用的 PluginDescriptor */
+export function sdkDescriptorToPlugin(sdk: SdkDescriptor): PluginDescriptor {
+  return { ...sdk, type: 'sdk' };
+}
+
 /** 插件描述符 */
 export interface PluginDescriptor {
   /** 插件唯一标识 */
@@ -66,7 +104,7 @@ export interface PluginInstance {
   lifecycle: import('@/lifecycle').AppLifecycle | import('@/lifecycle').SdkLifecycle;
   module: unknown;
   exports?: unknown;
-  uiComponents?: Record<string, React.ComponentType<any>>;
+  uiComponents?: Record<string, React.ComponentType<Record<string, unknown>>>;
   status: 'registered' | 'loaded' | 'active' | 'inactive' | 'error';
 }
 

@@ -1,0 +1,16 @@
+[
+  {
+    "name": "product",
+    "version": "1.0.0",
+    "entry": "/apps/product.mjs",
+    "routePrefix": "/product",
+    "dependencies": ["region-selector"],
+    "navItem": {
+      "key": "product",
+      "label": "商品管理",
+      "icon": "📦",
+      "order": 100,
+      "children": [{ "key": "", "label": "商品列表" }]
+    }
+  }
+]

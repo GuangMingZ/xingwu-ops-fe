@@ -1,9 +1,12 @@
 import type {
+  AppDescriptor,
+  SdkDescriptor,
   PluginDescriptor,
   PluginInstance,
   AppLifecycle,
   SdkLifecycle,
 } from '@xingwu/types';
+import { appDescriptorToPlugin, sdkDescriptorToPlugin } from '@xingwu/types';
 
 /**
  * PluginRegistry — 插件注册表
@@ -29,9 +32,19 @@ export class PluginRegistry {
     });
   }
 
-  /** 批量注册（从配置中心拉取） */
+  /** 批量注册 */
   registerAll(descriptors: PluginDescriptor[]): void {
     descriptors.forEach((d) => this.register(d));
+  }
+
+  /** 注册子应用描述符 */
+  registerApps(apps: AppDescriptor[]): void {
+    apps.forEach((app) => this.register(appDescriptorToPlugin(app)));
+  }
+
+  /** 注册 SDK 描述符 */
+  registerSdks(sdks: SdkDescriptor[]): void {
+    sdks.forEach((sdk) => this.register(sdkDescriptorToPlugin(sdk)));
   }
 
   /** 解析插件：按需加载模块并实例化 */
@@ -53,8 +66,10 @@ export class PluginRegistry {
     }
 
     try {
-      const mod: any = await this.moduleCache.get(name)!;
-      const lifecycle = (mod.default || mod) as AppLifecycle | SdkLifecycle;
+      const mod: unknown = await this.moduleCache.get(name)!;
+      const lifecycle = (mod as Record<string, unknown>).default
+        ? ((mod as Record<string, unknown>).default as AppLifecycle | SdkLifecycle)
+        : (mod as AppLifecycle | SdkLifecycle);
       const instance = this.plugins.get(name)!;
 
       instance.module = mod;
@@ -62,8 +77,12 @@ export class PluginRegistry {
       instance.exports = mod;
       instance.status = 'loaded';
 
-      // 若是 SDK，收集 UI 组件（延迟到 activate 阶段）
-      if (existing.descriptor.type === 'sdk' && typeof (lifecycle as any).getComponents === 'function') {
+      // 若是 SDK 且存在 getComponents，收集 UI 组件（延迟到 activate 阶段）
+      // 使用 in 操作符检测，避免 as any 绕过类型检查
+      if (
+        existing.descriptor.type === 'sdk' &&
+        typeof (lifecycle as Record<string, unknown>).getComponents === 'function'
+      ) {
         // getComponents 需要 SdkContext，延迟到 activate 阶段处理
       }
 

@@ -1,4 +1,5 @@
-import type { ShellConfig, PluginDescriptor } from '@xingwu/types';
+import type { ShellConfig } from '@xingwu/types';
+import { loadPluginConfig } from '@/config/loadPluginConfig';
 import { PluginRegistry } from '@/registry';
 import { ConfigCenter } from '@/config-center';
 import { SharedStateBus } from '@/shared-state';
@@ -52,24 +53,14 @@ export class Shell {
 
   /** 初始化框架 */
   async init(): Promise<void> {
-    // 注册插件描述符
     const { plugins } = this.config;
-    if (Array.isArray(plugins.descriptors)) {
-      this.registry.registerAll(plugins.descriptors);
-    } else if (typeof plugins.descriptors === 'string') {
-      // 从远程拉取描述符
-      try {
-        const response = await fetch(plugins.descriptors);
-        const descriptors: PluginDescriptor[] = await response.json();
-        this.registry.registerAll(descriptors);
-      } catch (err) {
-        console.error('[Xingwu] Failed to fetch plugin descriptors:', err);
-      }
-    }
 
-    // 预加载 SDK
-    if ((plugins.preloadSdks ?? []).length > 0) {
-      await this.sdkRegistry.preload(plugins.preloadSdks);
+    const { apps, sdks, preloadSdkNames } = await loadPluginConfig(plugins);
+    this.registry.registerApps(apps);
+    this.registry.registerSdks(sdks);
+
+    if (preloadSdkNames.length > 0) {
+      await this.sdkRegistry.preload(preloadSdkNames);
     }
 
     // 启动配置中心远程刷新

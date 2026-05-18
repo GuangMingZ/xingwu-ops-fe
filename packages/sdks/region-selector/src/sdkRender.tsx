@@ -59,10 +59,15 @@ export async function renderSdkUi(container: HTMLElement, ctx: SdkContext): Prom
   renderIntoContainer(container, ctx);
 }
 
-export async function unrenderSdkUi(container: HTMLElement): Promise<void> {
-  regionListeners.get(container)?.();
-  regionListeners.delete(container);
-  const root = roots.get(container);
-  root?.unmount();
-  roots.delete(container);
+export function unrenderSdkUi(container: HTMLElement): Promise<void> {
+  return new Promise((resolve) => {
+    queueMicrotask(() => {
+      regionListeners.get(container)?.();
+      regionListeners.delete(container);
+      const root = roots.get(container);
+      root?.unmount();
+      roots.delete(container);
+      resolve();
+    });
+  });
 }

@@ -1,4 +1,4 @@
-import type { PluginDescriptor, RedirectRule } from '@/plugin';
+import type { AppDescriptor, SdkDescriptor, RedirectRule } from '@/plugin';
 
 /** Shell 配置 */
 export interface ShellConfig {
@@ -23,8 +23,12 @@ export interface ShellConfig {
 
   /** 插件配置 */
   plugins: {
-    descriptors: PluginDescriptor[] | string;
-    preloadSdks: string[];
+    /** 子应用列表，或 apps.json 的 URL（如 /config/apps.json） */
+    apps: AppDescriptor[] | string;
+    /** SDK 列表，或 sdks.json 的 URL（如 /config/sdks.json） */
+    sdks: SdkDescriptor[] | string;
+    /** 预加载 SDK 名；未指定时取 sdks 中 preload: true 的项 */
+    preloadSdks?: string[];
     /** 子应用卸载后驱逐 ESM 模块缓存，默认 true */
     evictOnUnmount?: boolean;
   };
