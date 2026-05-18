@@ -11,6 +11,34 @@ import type { PluginRegistry } from '@/registry';
 export interface LifecycleManagerOptions {
   /** 子应用卸载后是否驱逐 ESM 模块缓存（默认 true，利于切换 App 后回收内存） */
   evictOnUnmount?: boolean;
+  /**
+   * 单个生命周期钩子的最大允许执行时长（ms），默认 10000。
+   * 触发条件：钩子 Promise 在指定时间内未 resolve/reject。
+   * 超时后将 reject 并释放 appLifecycleLock，防止死锁。
+   */
+  hookTimeout?: number;
+}
+
+/** 默认钩子超时时长（10 秒） */
+const DEFAULT_HOOK_TIMEOUT_MS = 10_000;
+
+/**
+ * 为任意 Promise 添加超时熔断。
+ *
+ * 触发条件：目标 Promise 在 ms 毫秒内未完成。
+ * 与正常路径的差异：正常路径直接 await，超时路径通过 Promise.race 竞争，
+ *   超时时 reject 而非永久挂起，从而释放 appLifecycleLock。
+ * 选择该修复方式的原因：生命周期锁一旦挂死，所有后续路由跳转均无法执行，
+ *   超时熔断是成本最低、影响面最小的防御手段。
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(
+      () => reject(new Error(`[Xingwu] Lifecycle hook "${label}" timed out after ${ms}ms`)),
+      ms,
+    ),
+  );
+  return Promise.race([promise, timeout]);
 }
 
 type RouteGuard = () => boolean | Promise<boolean>;
@@ -36,6 +64,10 @@ export class LifecycleManager {
 
   private get evictOnUnmount(): boolean {
     return this.options.evictOnUnmount !== false;
+  }
+
+  private get hookTimeout(): number {
+    return this.options.hookTimeout ?? DEFAULT_HOOK_TIMEOUT_MS;
   }
 
   /** 当前活跃子应用名 */
@@ -75,10 +107,14 @@ export class LifecycleManager {
     }
 
     if (lifecycle.beforeMount) {
-      await lifecycle.beforeMount(ctx);
+      await withTimeout(
+        lifecycle.beforeMount(ctx),
+        this.hookTimeout,
+        `${name}.beforeMount`,
+      );
     }
 
-    await lifecycle.mount(ctx);
+    await withTimeout(lifecycle.mount(ctx), this.hookTimeout, `${name}.mount`);
 
     if (lifecycle.afterMount) {
       lifecycle.afterMount(ctx);
@@ -102,7 +138,7 @@ export class LifecycleManager {
 
       const lifecycle = instance.lifecycle as AppLifecycle;
       if (lifecycle.update) {
-        await lifecycle.update(ctx);
+        await withTimeout(lifecycle.update(ctx), this.hookTimeout, `${name}.update`);
       }
 
       this.activeAppContext = ctx;
@@ -146,14 +182,18 @@ export class LifecycleManager {
     const unmountCtx = ctx ?? this.activeAppContext;
 
     if (unmountCtx && lifecycle.beforeUnmount) {
-      const canUnmount = await lifecycle.beforeUnmount(unmountCtx);
+      const canUnmount = await withTimeout(
+        lifecycle.beforeUnmount(unmountCtx),
+        this.hookTimeout,
+        `${name}.beforeUnmount`,
+      );
       if (canUnmount === false) {
         return;
       }
     }
 
     if (unmountCtx && typeof lifecycle.unmount === 'function') {
-      await lifecycle.unmount(unmountCtx);
+      await withTimeout(lifecycle.unmount(unmountCtx), this.hookTimeout, `${name}.unmount`);
     }
 
     this.registry.setStatus(name, 'inactive');
@@ -184,7 +224,7 @@ export class LifecycleManager {
       return;
     }
 
-    await lifecycle.activate(ctx);
+    await withTimeout(lifecycle.activate(ctx), this.hookTimeout, `${name}.activate`);
 
     if (lifecycle.getComponents) {
       const components = lifecycle.getComponents(ctx);
@@ -200,7 +240,7 @@ export class LifecycleManager {
     if (!instance) return;
 
     const lifecycle = instance.lifecycle as SdkLifecycle;
-    await lifecycle.deactivate(ctx);
+    await withTimeout(lifecycle.deactivate(ctx), this.hookTimeout, `${name}.deactivate`);
     this.registry.setStatus(name, 'inactive');
   }
 

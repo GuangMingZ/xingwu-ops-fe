@@ -7,6 +7,18 @@ import type { Subscriber } from '@xingwu/types';
  * 所有 key 遵循 pluginName.stateKey 命名空间。
  * 写入操作自动记录来源插件。
  */
+
+/**
+ * writeLog 滚动窗口容量上限。
+ *
+ * 触发条件：长时间运行会话中频繁调用 setState / batchSet，
+ *   导致 writeLog 数组无限增长，引发内存泄漏。
+ * 与原实现差异：原实现无上限，现在每次写入后若超出阈值，
+ *   截取末尾 MAX_WRITE_LOG 条记录（保留最新），丢弃最早的历史。
+ * 选择该修复方式的原因：滚动窗口是内存恒定、实现简单、
+ *   对审计用途仍保留足够历史记录的最优折中。
+ */
+const MAX_WRITE_LOG = 5_000;
 export class SharedStateBus {
   private state: Map<string, unknown> = new Map();
   private subscribers: Map<string, Set<Subscriber>> = new Map();
@@ -25,12 +37,15 @@ export class SharedStateBus {
 
     this.state.set(key, resolvedValue);
 
-    // 记录写入日志
+    // 记录写入日志（滚动窗口：超出上限时丢弃最旧记录）
     this.writeLog.push({
       key,
       value: resolvedValue,
       timestamp: Date.now(),
     });
+    if (this.writeLog.length > MAX_WRITE_LOG) {
+      this.writeLog = this.writeLog.slice(-MAX_WRITE_LOG);
+    }
 
     // 触发订阅者
     const subs = this.subscribers.get(key);
@@ -71,6 +86,10 @@ export class SharedStateBus {
         value,
         timestamp: Date.now(),
       });
+    }
+
+    if (this.writeLog.length > MAX_WRITE_LOG) {
+      this.writeLog = this.writeLog.slice(-MAX_WRITE_LOG);
     }
 
     // 通知所有受影响的订阅者

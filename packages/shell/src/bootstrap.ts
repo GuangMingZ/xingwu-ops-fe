@@ -33,11 +33,11 @@ export class Shell {
     this.monitor = new MonitorImpl(config.monitor);
     this.i18n = new I18nImpl(config.i18n);
     this.net = new NetClientImpl();
-    this.permission = new PermissionCheckerImpl();
+    this.permission = new PermissionCheckerImpl(config.permission);
 
     // 初始化核心模块
     this.registry = new PluginRegistry();
-    this.configCenter = new ConfigCenter(config.configCenter);
+    this.configCenter = new ConfigCenter(config.configCenter, this.monitor);
     this.sharedState = new SharedStateBus();
     this.lifecycle = new LifecycleManager(this.registry, {
       evictOnUnmount: config.plugins.evictOnUnmount !== false,

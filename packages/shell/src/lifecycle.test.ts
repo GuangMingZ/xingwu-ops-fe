@@ -1,5 +1,5 @@
 import type { AppContext, AppLifecycle, PluginDescriptor, PluginInstance } from '@xingwu/types';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LifecycleManager } from '@/lifecycle';
 import type { PluginRegistry } from '@/registry';
 
@@ -115,6 +115,89 @@ function createLifecycle(
 ): LifecycleManager {
   return new LifecycleManager(registry as unknown as PluginRegistry, options);
 }
+
+describe('LifecycleManager — 生命周期钩子超时熔断 (P1-4)', () => {
+  let registry: MockPluginRegistry;
+
+  beforeEach(() => {
+    registry = new MockPluginRegistry();
+    registry.register(appDescriptor('slow-app'));
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('mount 超时后 reject，不永久锁住 appLifecycleLock', async () => {
+    registry.setLifecycle('slow-app', {
+      // 永不 resolve 的 mount
+      mount: () => new Promise<void>(() => {}),
+      unmount: async () => {},
+    });
+
+    const lm = new LifecycleManager(registry as unknown as PluginRegistry, {
+      hookTimeout: 500,
+    });
+    const container = document.createElement('div');
+    const ctx = makeCtx('slow-app', container);
+
+    const mountPromise = lm.mountApp('slow-app', container, ctx);
+
+    // 推进虚拟时钟 500ms，触发超时（async 版本可让 microtask 队列排干）
+    await vi.advanceTimersByTimeAsync(500);
+
+    await expect(mountPromise).rejects.toThrow(/timed out/);
+  });
+
+  it('超时 reject 后仍可继续 mount 新 App（锁已释放）', async () => {
+    registry.register(appDescriptor('fast-app'));
+    registry.setLifecycle('slow-app', {
+      mount: () => new Promise<void>(() => {}),
+      unmount: async () => {},
+    });
+    registry.setLifecycle('fast-app', {
+      mount: async () => {},
+      unmount: async () => {},
+    });
+
+    const lm = new LifecycleManager(registry as unknown as PluginRegistry, {
+      hookTimeout: 500,
+    });
+    const container = document.createElement('div');
+
+    const slowMount = lm.mountApp('slow-app', container, makeCtx('slow-app', container));
+    await vi.advanceTimersByTimeAsync(500);
+    await expect(slowMount).rejects.toThrow(/timed out/);
+
+    // 锁已释放，fast-app 应能正常挂载
+    const fastMount = lm.mountApp('fast-app', container, makeCtx('fast-app', container));
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(fastMount).resolves.toBeUndefined();
+    expect(lm.getActiveApp()).toBe('fast-app');
+  });
+
+  it('beforeUnmount 超时后 reject，不永久锁住 appLifecycleLock', async () => {
+    registry.setLifecycle('slow-app', {
+      mount: async () => {},
+      unmount: async () => {},
+      beforeUnmount: () => new Promise<boolean>(() => {}),
+    });
+
+    const lm = new LifecycleManager(registry as unknown as PluginRegistry, {
+      hookTimeout: 300,
+    });
+    const container = document.createElement('div');
+    const ctx = makeCtx('slow-app', container);
+
+    // 先挂载（mount 本身是快速的，不需要推进时间）
+    await lm.mountApp('slow-app', container, ctx);
+
+    const unmountPromise = lm.unmountApp('slow-app', ctx);
+    await vi.advanceTimersByTimeAsync(300);
+    await expect(unmountPromise).rejects.toThrow(/timed out/);
+  });
+});
 
 describe('LifecycleManager — 子应用内存与切换', () => {
   let registry: MockPluginRegistry;

@@ -1,4 +1,5 @@
 import type { AppDescriptor, SdkDescriptor, RedirectRule } from '@/plugin';
+import type { PermissionConfig } from '@/infra';
 
 /** Shell 配置 */
 export interface ShellConfig {
@@ -54,6 +55,9 @@ export interface ShellConfig {
   errorBoundary: {
     fallback: React.ComponentType<{ error: Error }>;
   };
+
+  /** 权限初始配置（可选，未配置时采用 Deny-by-default 策略） */
+  permission?: PermissionConfig;
 }
 
 /** 国际化配置 */

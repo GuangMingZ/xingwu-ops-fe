@@ -86,12 +86,29 @@ export interface PermissionNode {
   fallback?: React.ComponentType;
 }
 
+/**
+ * 权限检查器配置
+ *
+ * 采用 Deny-by-default 策略：仅在 allowedActions 中显式声明的 RBAC
+ * action 才被允许，未配置时所有检查默认拒绝。
+ */
+export interface PermissionConfig {
+  /** 是否拥有管理员权限，默认 false */
+  isAdmin?: boolean;
+  /** 是否通过身份验证，默认 false */
+  isAuthenticated?: boolean;
+  /** 允许通过的 RBAC action 集合，默认空集合（全拒绝） */
+  allowedActions?: string[];
+}
+
 /** 权限检查接口 */
 export interface PermissionChecker {
   checkAdmin(): Promise<boolean>;
   checkIdentity(): Promise<boolean>;
   checkRbacAction(action: string): Promise<boolean>;
   checkChain(chain: PermissionNode[]): Promise<PermissionResult>;
+  /** 动态更新权限配置（用于登录/权限刷新场景） */
+  configure(config: PermissionConfig): void;
 }
 
 /** SdkRegistry 门面接口 */
