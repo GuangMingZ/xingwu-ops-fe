@@ -16,6 +16,38 @@ function routeParamsFor(pathname: string, routePrefix: string): Record<string, s
   return params;
 }
 
+function buildAppContext(
+  shell: Shell,
+  descriptor: AppContext['descriptor'],
+  el: HTMLElement,
+  location: ReturnType<typeof useLocation>,
+  navigate: ReturnType<typeof useNavigate>,
+): AppContext {
+  return {
+    descriptor,
+    router: {
+      params: routeParamsFor(location.pathname, descriptor.routePrefix || ''),
+      query: Object.fromEntries(new URLSearchParams(location.search)),
+      navigate: (to, options) => {
+        navigate(to, { replace: options?.replace, state: options?.state });
+      },
+      beforeLeave: (guard) => {
+        shell.lifecycle.registerRouteGuard(descriptor.name, guard);
+      },
+    },
+    config: shell.configCenter.forPlugin(descriptor.name),
+    sharedState: shell.sharedState,
+    sdk: shell.sdkRegistry,
+    infra: {
+      monitor: shell.monitor,
+      i18n: shell.i18n,
+      net: shell.net,
+      permission: shell.permission,
+    },
+    container: el,
+  };
+}
+
 interface AppOutletProps {
   shell: Shell;
 }
@@ -28,6 +60,24 @@ export function AppOutlet({ shell }: AppOutletProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  const mountedAppRef = useRef<string | null>(null);
+  const lastCtxRef = useRef<AppContext | null>(null);
+  const loadGenerationRef = useRef(0);
+
+  /** Outlet 组件销毁时卸载子应用（跨 App 切换、离开业务路由） */
+  useEffect(() => {
+    return () => {
+      const name = mountedAppRef.current;
+      const ctx = lastCtxRef.current;
+      if (name && ctx) {
+        void shell.lifecycle.unmountApp(name, ctx).catch(console.error);
+      }
+      mountedAppRef.current = null;
+      lastCtxRef.current = null;
+    };
+  }, [shell]);
+
+  /** 路由变化：同 App 走 update，切换 App 由 LifecycleManager 先卸旧再挂新 */
   useEffect(() => {
     const descriptor = shell.registry.findByRoute(location.pathname);
     if (!descriptor) return;
@@ -35,44 +85,38 @@ export function AppOutlet({ shell }: AppOutletProps) {
     const el = mountRef.current;
     if (!el) return;
 
+    const generation = ++loadGenerationRef.current;
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    const ctx: AppContext = {
-      descriptor,
-      router: {
-        params: routeParamsFor(location.pathname, descriptor.routePrefix || ''),
-        query: Object.fromEntries(new URLSearchParams(location.search)),
-        navigate: (to, options) => {
-          navigate(to, { replace: options?.replace, state: options?.state });
-        },
-        beforeLeave: (guard) => {
-          shell.lifecycle.registerRouteGuard(guard);
-        },
-      },
-      config: shell.configCenter.forPlugin(descriptor.name),
-      sharedState: shell.sharedState,
-      sdk: shell.sdkRegistry,
-      infra: {
-        monitor: shell.monitor,
-        i18n: shell.i18n,
-        net: shell.net,
-        permission: shell.permission,
-      },
-      container: el,
-    };
+    const ctx = buildAppContext(shell, descriptor, el, location, navigate);
+    lastCtxRef.current = ctx;
 
     void (async () => {
       try {
         const perm = await shell.lifecycle.checkPermission(descriptor);
+        if (cancelled || generation !== loadGenerationRef.current) return;
         if (!perm.granted) {
           throw new Error(perm.reason);
         }
-        await shell.lifecycle.mountApp(descriptor.name, el, ctx);
-        if (!cancelled) setLoading(false);
+
+        const isSameAppMounted =
+          mountedAppRef.current === descriptor.name &&
+          shell.lifecycle.getActiveApp() === descriptor.name;
+
+        if (isSameAppMounted) {
+          await shell.lifecycle.updateApp(descriptor.name, ctx);
+        } else {
+          await shell.lifecycle.mountApp(descriptor.name, el, ctx);
+          mountedAppRef.current = descriptor.name;
+        }
+
+        if (!cancelled && generation === loadGenerationRef.current) {
+          setLoading(false);
+        }
       } catch (err) {
-        if (!cancelled) {
+        if (!cancelled && generation === loadGenerationRef.current) {
           setError(err instanceof Error ? err : new Error(String(err)));
           setLoading(false);
         }
@@ -81,7 +125,6 @@ export function AppOutlet({ shell }: AppOutletProps) {
 
     return () => {
       cancelled = true;
-      void shell.lifecycle.unmountApp(descriptor.name, ctx).catch(console.error);
     };
   }, [location.pathname, location.search, shell, navigate]);
 

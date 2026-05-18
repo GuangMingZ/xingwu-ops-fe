@@ -16,6 +16,14 @@ const rootByContainer = new WeakMap<HTMLElement, Root>();
 
 const lifecycle: AppLifecycle = {
   async mount(ctx: AppContext) {
+    // 触发条件：壳层在竞态窗口内重复 mount 同一容器
+    // 与正常路径差异：应先卸载已有 Root 再 createRoot
+    // 修复原因：避免同容器双 React Root 导致内存泄漏
+    const existing = rootByContainer.get(ctx.container);
+    if (existing) {
+      existing.unmount();
+      rootByContainer.delete(ctx.container);
+    }
     const root = createRoot(ctx.container);
     rootByContainer.set(ctx.container, root);
     /** Shell 与子应用是不同 React Root，Router Context 不共享；此处必须自带 Router，Link 才能工作 */

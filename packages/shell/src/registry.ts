@@ -85,21 +85,25 @@ export class PluginRegistry {
     return this.plugins.get(name);
   }
 
-  /** 卸载插件 */
+  /**
+   * 驱逐子应用 ESM 模块缓存，使下次进入需重新 import。
+   * 触发条件：子应用 unmount 且配置 evictOnUnmount
+   */
+  evictAppModule(name: string): void {
+    const instance = this.plugins.get(name);
+    if (!instance || instance.descriptor.type !== 'app') return;
+
+    this.moduleCache.delete(name);
+    instance.module = null;
+    instance.exports = undefined;
+    instance.lifecycle = {} as AppLifecycle | SdkLifecycle;
+    instance.status = 'registered';
+  }
+
+  /** 卸载插件（需由 LifecycleManager 先完成 unmount/deactivate） */
   async unregister(name: string): Promise<void> {
     const instance = this.plugins.get(name);
     if (!instance) return;
-
-    if (instance.status === 'active') {
-      // 先执行生命周期卸载
-      const lifecycle = instance.lifecycle;
-      if (typeof (lifecycle as any).unmount === 'function') {
-        // 需要上下文，此处简化处理
-      }
-      if (typeof (lifecycle as any).deactivate === 'function') {
-        // 需要上下文，此处简化处理
-      }
-    }
 
     this.moduleCache.delete(name);
     this.plugins.delete(name);

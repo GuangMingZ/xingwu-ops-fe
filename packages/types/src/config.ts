@@ -25,6 +25,8 @@ export interface ShellConfig {
   plugins: {
     descriptors: PluginDescriptor[] | string;
     preloadSdks: string[];
+    /** 子应用卸载后驱逐 ESM 模块缓存，默认 true */
+    evictOnUnmount?: boolean;
   };
 
   /** 布局配置 */

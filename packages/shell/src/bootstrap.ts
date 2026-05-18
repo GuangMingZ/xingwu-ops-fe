@@ -38,7 +38,9 @@ export class Shell {
     this.registry = new PluginRegistry();
     this.configCenter = new ConfigCenter(config.configCenter);
     this.sharedState = new SharedStateBus();
-    this.lifecycle = new LifecycleManager(this.registry);
+    this.lifecycle = new LifecycleManager(this.registry, {
+      evictOnUnmount: config.plugins.evictOnUnmount !== false,
+    });
     this.sdkRegistry = new SdkRegistry(this.registry, {
       lifecycle: this.lifecycle,
       configCenter: this.configCenter,
@@ -91,12 +93,7 @@ export class Shell {
   /** 销毁框架 */
   async destroy(): Promise<void> {
     this.configCenter.stopRefresh();
-    // 卸载所有活跃插件
-    for (const instance of this.registry.getAll()) {
-      if (instance.status === 'active') {
-        await this.registry.unregister(instance.descriptor.name);
-      }
-    }
+    await this.lifecycle.unmountActiveApp();
     console.info(`[Xingwu] Shell "${this.config.appName}" destroyed.`);
   }
 }
