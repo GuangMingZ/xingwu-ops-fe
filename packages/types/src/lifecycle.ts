@@ -36,6 +36,15 @@ export interface SdkLifecycle {
   /** SDK 出错时的降级策略 */
   onError?(error: Error, ctx: import('@/context').SdkContext): void;
 
-  /** SDK 提供的 UI 组件映射表 */
-  getComponents?(ctx: import('@/context').SdkContext): Record<string, React.ComponentType<any>>;
+  /** SDK 提供的 UI 组件映射表（供子应用等宿主显式引用） */
+  getComponents?(ctx: import('@/context').SdkContext): Record<string, React.ComponentType<unknown>>;
+
+  /**
+   * SDK 自主将 UI 渲染到宿主提供的 DOM 容器。
+   * 容器上应带有 `data-xingwu-slot`（由壳层 SdkSlotHost 注入），用于区分多插槽。
+   */
+  render?(container: HTMLElement, ctx: import('@/context').SdkContext): void | Promise<void>;
+
+  /** 从容器卸载 SDK 自主渲染的 UI */
+  unrender?(container: HTMLElement, ctx: import('@/context').SdkContext): void | Promise<void>;
 }

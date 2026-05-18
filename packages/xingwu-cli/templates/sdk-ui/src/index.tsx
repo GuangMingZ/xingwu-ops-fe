@@ -23,6 +23,16 @@ const lifecycle: SdkLifecycle = {
       {{pascalName}}Panel,
     };
   },
+
+  render(container, ctx) {
+    // 可选：由壳层 SdkSlotHost 传入 DOM，SDK 自主挂载 UI
+    void container;
+    void ctx;
+  },
+
+  unrender(container) {
+    void container;
+  },
 };
 
 export default lifecycle;

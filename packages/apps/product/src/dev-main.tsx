@@ -65,6 +65,9 @@ const devSdk: SdkRegistry = {
   preload: async () => {},
   reload: async () => {},
   getComponent: () => undefined,
+  renderTo: async () => {},
+  unrenderFrom: async () => {},
+  onRerender: () => () => {},
 };
 
 const devConfig: TypedConfig = {

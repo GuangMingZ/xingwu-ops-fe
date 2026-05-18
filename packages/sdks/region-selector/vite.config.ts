@@ -22,6 +22,7 @@ const tailwindConfigPath = path.resolve(__dirname, '../../../tailwind.config.cjs
 function createSharedReactPlugin(): Plugin {
   const virtualReact = '\0virtual:shared-react';
   const virtualReactDOM = '\0virtual:shared-react-dom';
+  const virtualReactDOMClient = '\0virtual:shared-react-dom-client';
   const virtualJsxRuntime = '\0virtual:shared-react-jsx-runtime';
   const virtualJsxDevRuntime = '\0virtual:shared-react-jsx-dev-runtime';
 
@@ -33,6 +34,9 @@ function createSharedReactPlugin(): Plugin {
       if (!this.meta.watchMode) return null;
       if (source === 'react') return virtualReact;
       if (source === 'react-dom') return virtualReactDOM;
+      /** react-dom/client 必须单独拦截，否则会落到 Vite 预构建路径，
+       * CJS→ESM 转换无法正确暴露 createRoot 命名导出 */
+      if (source === 'react-dom/client') return virtualReactDOMClient;
       if (source === 'react/jsx-runtime') return virtualJsxRuntime;
       /** 开发态 automatic JSX 走 jsx-dev-runtime，需一并虚拟化，否则会落到裸模块与宿主预构建冲突 */
       if (source === 'react/jsx-dev-runtime') return virtualJsxDevRuntime;
@@ -84,6 +88,14 @@ export const createRoot = RD.createRoot;
 export const hydrateRoot = RD.hydrateRoot;
 `;
       }
+      if (id === virtualReactDOMClient) {
+        return `
+const RD = window.__REACT_SHARED__?.ReactDOM;
+if (!RD) throw new Error('[SDK] Shared ReactDOM not found. Ensure shell loads first.');
+export const createRoot = RD.createRoot;
+export const hydrateRoot = RD.hydrateRoot;
+`;
+      }
       if (id === virtualJsxRuntime) {
         return `
 import R from 'react';
@@ -120,7 +132,7 @@ export default defineConfig({
       '@components': path.resolve(__dirname, 'src/components'),
       '@styles': path.resolve(__dirname, '../../../styles'),
     },
-    dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+    dedupe: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
   },
   /**
    * 完全禁用依赖预构建，让所有模块走 Vite 的正常 transform → resolve pipeline。

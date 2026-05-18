@@ -101,8 +101,18 @@ export interface SdkRegistry {
   load<T = unknown>(name: string): Promise<T>;
   preload(names: string[]): Promise<void>;
   reload(name: string): Promise<void>;
-  getComponent<T extends React.ComponentType<any>>(
+  getComponent<T extends React.ComponentType<unknown>>(
     sdkName: string,
     componentName: string,
   ): T | undefined;
+  /** SDK 将 UI 渲染到宿主提供的 DOM（需已实现 SdkLifecycle.render） */
+  renderTo(
+    sdkName: string,
+    container: HTMLElement,
+    options?: { slot?: string },
+  ): Promise<void>;
+  /** 卸载指定容器上的 SDK UI */
+  unrenderFrom(sdkName: string, container: HTMLElement): Promise<void>;
+  /** 订阅 SDK 的 requestRerender 通知 */
+  onRerender(sdkName: string, callback: () => void, componentName?: string): () => void;
 }

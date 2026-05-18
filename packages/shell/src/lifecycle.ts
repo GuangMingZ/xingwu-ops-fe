@@ -98,6 +98,29 @@ export class LifecycleManager {
     this.registry.setStatus(name, 'inactive');
   }
 
+  /** SDK 自主渲染 UI 到宿主 DOM */
+  async renderSdk(name: string, container: HTMLElement, ctx: SdkContext): Promise<void> {
+    const instance = this.registry.getInstance(name);
+    if (!instance) {
+      throw new Error(`[Xingwu] SDK "${name}" not loaded.`);
+    }
+    const lifecycle = instance.lifecycle as SdkLifecycle;
+    if (!lifecycle.render) {
+      return;
+    }
+    await lifecycle.render(container, ctx);
+  }
+
+  /** 卸载 SDK 在宿主 DOM 上的 UI */
+  async unrenderSdk(name: string, container: HTMLElement, ctx: SdkContext): Promise<void> {
+    const instance = this.registry.getInstance(name);
+    if (!instance) return;
+    const lifecycle = instance.lifecycle as SdkLifecycle;
+    if (lifecycle.unrender) {
+      await lifecycle.unrender(container, ctx);
+    }
+  }
+
   /** 执行权限校验链（简化实现） */
   async checkPermission(_descriptor: PluginDescriptor): Promise<PermissionResult> {
     // 简化实现：默认全部通过

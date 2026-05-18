@@ -22,17 +22,49 @@ export interface SdkRegistryDeps {
  */
 export class SdkRegistry implements ISdkRegistry {
   private componentCache: Map<string, Record<string, ComponentType<unknown>>> = new Map();
+  private rerenderListeners = new Map<string, Set<() => void>>();
 
   constructor(
     private registry: PluginRegistry,
     private deps: SdkRegistryDeps,
   ) {}
 
+  private rerenderKey(sdkName: string, componentName?: string): string {
+    return componentName ? `${sdkName}:${componentName}` : sdkName;
+  }
+
+  private emitRerender(sdkName: string, componentName?: string): void {
+    const keys = componentName
+      ? [this.rerenderKey(sdkName, componentName), this.rerenderKey(sdkName)]
+      : [this.rerenderKey(sdkName)];
+    for (const key of keys) {
+      this.rerenderListeners.get(key)?.forEach((cb) => {
+        try {
+          cb();
+        } catch (err) {
+          console.error(`[Xingwu] SdkRegistry rerender listener error (${key}):`, err);
+        }
+      });
+    }
+  }
+
+  onRerender(sdkName: string, callback: () => void, componentName?: string): () => void {
+    const key = this.rerenderKey(sdkName, componentName);
+    if (!this.rerenderListeners.has(key)) {
+      this.rerenderListeners.set(key, new Set());
+    }
+    this.rerenderListeners.get(key)!.add(callback);
+    return () => {
+      this.rerenderListeners.get(key)?.delete(callback);
+    };
+  }
+
   private buildSdkContext(name: string): SdkContext {
     const descriptor = this.registry.getDescriptor(name);
     if (!descriptor) {
       throw new Error(`[Xingwu] SDK "${name}" not registered.`);
     }
+    const hasUi = (descriptor.uiComponents?.length ?? 0) > 0;
     return {
       descriptor,
       config: this.deps.configCenter.forPlugin(name) as SdkContext['config'],
@@ -41,6 +73,17 @@ export class SdkRegistry implements ISdkRegistry {
         monitor: this.deps.monitor,
         i18n: this.deps.i18n,
       },
+      ui: hasUi
+        ? {
+            getSlot(slotName: string) {
+              const decl = descriptor.uiComponents?.find((c) => c.slot === slotName);
+              return decl ? { name: slotName, type: 'slot' } : undefined;
+            },
+            requestRerender: (componentName: string) => {
+              this.emitRerender(name, componentName);
+            },
+          }
+        : undefined,
     };
   }
 
@@ -145,5 +188,27 @@ export class SdkRegistry implements ISdkRegistry {
   getUiComponentDecls(sdkName: string): UiComponentDecl[] {
     const desc = this.registry.getDescriptor(sdkName);
     return desc?.uiComponents ?? [];
+  }
+
+  /** SDK 将 UI 渲染到宿主 DOM */
+  async renderTo(
+    sdkName: string,
+    container: HTMLElement,
+    options?: { slot?: string },
+  ): Promise<void> {
+    if (options?.slot) {
+      container.dataset.xingwuSlot = options.slot;
+    }
+    await this.load(sdkName);
+    const ctx = this.buildSdkContext(sdkName);
+    await this.deps.lifecycle.renderSdk(sdkName, container, ctx);
+  }
+
+  /** 卸载宿主 DOM 上的 SDK UI */
+  async unrenderFrom(sdkName: string, container: HTMLElement): Promise<void> {
+    const instance = this.registry.getInstance(sdkName);
+    if (!instance) return;
+    const ctx = this.buildSdkContext(sdkName);
+    await this.deps.lifecycle.unrenderSdk(sdkName, container, ctx);
   }
 }

@@ -1,7 +1,6 @@
 import { Button, Dropdown, Layout, theme, Typography } from 'antd';
-import type { ComponentType } from 'react';
-import { useEffect, useState } from 'react';
 import type { Shell } from '@/bootstrap';
+import { SdkSlotHost } from './SdkSlotHost';
 
 const { Header } = Layout;
 
@@ -11,30 +10,6 @@ interface ShellHeaderProps {
 
 export function ShellHeader({ shell }: ShellHeaderProps) {
   const { token } = theme.useToken();
-  const [, forceUpdate] = useState(0);
-
-  type RegionApi = {
-    getAvailableRegions: () => Array<{ id: string; name: string }>;
-    getCurrentRegion: () => { id: string; name: string };
-    setCurrentRegion: (id: string) => void;
-    onRegionsUpdated: (cb: () => void) => () => void;
-  };
-
-  // 从 SDK 注册表获取 RegionPicker 组件
-  const RegionPicker = shell.sdkRegistry.getComponent<
-    ComponentType<{
-      regions?: Array<{ id: string; name: string }>;
-      currentRegion?: { id: string; name: string };
-      onChange?: (region: { id: string; name: string }) => void;
-    }>
-  >('region-selector', 'RegionPicker');
-
-  const api = shell.sdkRegistry.get<RegionApi>('region-selector');
-
-  useEffect(() => {
-    if (!api) return;
-    return api.onRegionsUpdated(() => forceUpdate((n) => n + 1));
-  }, [api]);
 
   return (
     <Header
@@ -50,16 +25,14 @@ export function ShellHeader({ shell }: ShellHeaderProps) {
       <Typography.Text key="title" strong className="text-base">
         星坞 · OpsConsole
       </Typography.Text>
-      <div key="actions" className="flex items-center gap-3">
-        {/* header-slot: RegionPicker */}
-        {RegionPicker && api ? (
-          <RegionPicker
-            key="region-picker"
-            regions={api.getAvailableRegions()}
-            currentRegion={api.getCurrentRegion()}
-            onChange={(region) => api.setCurrentRegion(region.id)}
-          />
-        ) : null}
+      <div className="flex items-center gap-3" key="actions">
+        <SdkSlotHost
+          key="region-picker-slot"
+          shell={shell}
+          sdkName="region-selector"
+          slot="header-slot"
+          className="inline-flex items-center"
+        />
         <Dropdown
           key="system-menu"
           menu={{
