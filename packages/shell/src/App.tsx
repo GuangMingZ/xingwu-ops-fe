@@ -39,6 +39,7 @@ export function ShellApp({ shell, config }: AppProps) {
                   />
                 ))}
               <Route
+                key="default"
                 path="/"
                 element={
                   <Typography.Paragraph type="secondary" className="m-0">
@@ -46,7 +47,7 @@ export function ShellApp({ shell, config }: AppProps) {
                   </Typography.Paragraph>
                 }
               />
-              <Route path="*" element={<NotFound />} />
+              <Route key="not-found" path="*" element={<NotFound />} />
             </Routes>
           </Content>
         </Layout>
